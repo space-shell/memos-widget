@@ -1,0 +1,29 @@
+# Gradle
+.gradle/
+build/
+app/build/
+
+# Android
+local.properties
+captures/
+*.apk.idsig
+*.ap_
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Nix
+result
+result-*
+.direnv/
+
+# Keystore / secrets
+*.jks
+*.keystore
+!debug.keystore
+secrets.properties
+
+# Misc
+.DS_Store
