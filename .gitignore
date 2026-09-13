@@ -27,3 +27,4 @@ secrets.properties
 
 # Misc
 .DS_Store
+.kotlin/
