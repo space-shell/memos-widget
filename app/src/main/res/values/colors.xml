@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="launcher_background">#4F46E5</color>
+    <color name="widget_panel">#E61E1F22</color>
+    <color name="widget_field">#33FFFFFF</color>
+    <color name="widget_field_hint">#B3FFFFFF</color>
+</resources>

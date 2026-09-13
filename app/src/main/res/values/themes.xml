@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.MemosWidget" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
+
+    <style name="Theme.MemosWidget.QuickCompose" parent="android:Theme.Material.Light.Dialog.NoActionBar">
+        <item name="android:windowBackground">@drawable/bg_compose_panel</item>
+        <item name="android:backgroundDimEnabled">true</item>
+    </style>
+</resources>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Memos Widget</string>
+
+    <!-- Widget -->
+    <string name="widget_label">New memo</string>
+    <string name="widget_description">Quickly send memos to your self-hosted Memos server.</string>
+    <string name="widget_field_hint">New memo…</string>
+    <string name="widget_mic_description">Voice memo</string>
+    <string name="widget_send_description">Send memo</string>
+
+    <!-- Share target -->
+    <string name="share_label">Send to Memos</string>
+
+    <!-- Settings -->
+    <string name="settings_screen_title">Memos Widget</string>
+    <string name="settings_server_url_label">Server address</string>
+    <string name="settings_server_url_empty_support">e.g. https://memos.example.com</string>
+    <string name="settings_server_url_will_use">Will use %1$s</string>
+    <string name="settings_access_token_label">Access token</string>
+    <string name="settings_access_token_support">Create one in Memos: Settings → Access Tokens</string>
+    <string name="settings_visibility_label">Default visibility</string>
+    <string name="settings_test_connection">Test connection</string>
+    <string name="settings_testing">Testing…</string>
+    <string name="settings_token_show">Show token</string>
+    <string name="settings_token_hide">Hide token</string>
+    <string name="settings_connected">Connected</string>
+    <string name="settings_connected_version">Connected · Memos %1$s</string>
+    <string name="settings_connected_user">Connected · Memos %1$s · %2$s</string>
+    <string name="settings_usage_hint">Add the \"New memo\" widget to your home screen to quickly capture memos. Share text from any app to \"Send to Memos\".</string>
+
+    <!-- Quick compose -->
+    <string name="compose_hint">Write your memo…</string>
+    <string name="compose_send">Send</string>
+    <string name="compose_mic">Voice input</string>
+    <string name="compose_sent">Memo sent</string>
+    <string name="compose_listening">Listening…</string>
+    <string name="compose_configure">Configure server</string>
+    <string name="compose_speech_unavailable">Speech recognition is not available on this device</string>
+    <string name="compose_speech_error">Speech error %1$d</string>
+</resources>
