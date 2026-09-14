@@ -52,6 +52,14 @@ nix develop -c adb install app/build/outputs/apk/debug/app-debug.apk
 nix develop -c ./gradlew test lint
 ```
 
+## Releases
+
+CI (GitHub Actions) lints, tests, and builds on every push to `main`. Pushing a
+`v*` tag builds debug + signed release APKs and publishes them to GitHub
+Releases with checksums. Release signing reads the keystore from
+`SIGNING_*` environment variables; locally (or when unset) the release build
+falls back to debug signing.
+
 ## Architecture
 
 - UI: Kotlin + Jetpack Compose (Material 3); widget uses classic XML `RemoteViews`.

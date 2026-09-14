@@ -1,12 +1,15 @@
 package dev.jamesnicholls.memoswidget.widget
 
+import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.view.View
 import android.widget.RemoteViews
 import dev.jamesnicholls.memoswidget.AppContainer
+import dev.jamesnicholls.memoswidget.MainActivity
 import dev.jamesnicholls.memoswidget.QuickComposeActivity
 import dev.jamesnicholls.memoswidget.R
 import dev.jamesnicholls.memoswidget.data.StoredNote
@@ -64,9 +67,10 @@ class WidgetRefresher(
         )
         if (ids.isEmpty()) return
 
+        val settings = container.settingsRepository.settings.first()
         val notes = container.widgetStateRepository.notes.first()
         val fetchFailed = container.widgetStateRepository.fetchFailed.first()
-        val views = buildRemoteViews(notes, fetchFailed)
+        val views = buildRemoteViews(notes, fetchFailed, settings.serverUrl)
         manager.updateAppWidget(ids, views)
     }
 
@@ -91,7 +95,11 @@ class WidgetRefresher(
         }
     }
 
-    private fun buildRemoteViews(notes: List<StoredNote>, fetchFailed: Boolean): RemoteViews {
+    private fun buildRemoteViews(
+        notes: List<StoredNote>,
+        fetchFailed: Boolean,
+        serverUrl: String,
+    ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_memos)
 
         val rowIds = intArrayOf(
@@ -150,8 +158,34 @@ class WidgetRefresher(
             R.id.widget_compose,
             QuickComposeActivity.createLaunchIntent(context),
         )
+
+        val normalisedUrl = UrlUtil.normaliseBaseUrl(serverUrl)
+        views.setOnClickPendingIntent(
+            R.id.widget_title,
+            if (normalisedUrl.isNotEmpty()) {
+                browserPendingIntent(normalisedUrl)
+            } else {
+                settingsPendingIntent()
+            },
+        )
         return views
     }
+
+    private fun browserPendingIntent(url: String): PendingIntent = PendingIntent.getActivity(
+        context,
+        REQUEST_BROWSER,
+        Intent(Intent.ACTION_VIEW, Uri.parse(url))
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+    )
+
+    private fun settingsPendingIntent(): PendingIntent = PendingIntent.getActivity(
+        context,
+        REQUEST_SETTINGS,
+        Intent(context, MainActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+    )
 
     private fun StoredNote.snippet(): String =
         content
@@ -163,5 +197,7 @@ class WidgetRefresher(
 
     companion object {
         private const val FETCH_TIMEOUT_MS = 8_000L
+        private const val REQUEST_BROWSER = 2001
+        private const val REQUEST_SETTINGS = 2002
     }
 }

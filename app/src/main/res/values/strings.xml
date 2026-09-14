@@ -4,6 +4,8 @@
 
     <!-- Widget -->
     <string name="widget_label">New memo</string>
+    <string name="widget_title">Memos</string>
+    <string name="widget_title_description">Open Memos server</string>
     <string name="widget_description">Your latest memos and a quick compose button.</string>
     <string name="widget_notes_empty">Your latest notes appear here</string>
     <string name="widget_compose_description">Compose new note</string>
