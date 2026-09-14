@@ -47,6 +47,21 @@ class WidgetStateRepository(private val context: Context) {
         }
     }
 
+    /**
+     * Prepends a just-sent memo so the widget reflects it immediately,
+     * before the server fetch reconciles the list.
+     */
+    suspend fun prependNote(note: StoredNote) {
+        context.widgetDataStore.edit { prefs ->
+            val current = prefs[KEY_NOTES]
+                ?.let { raw ->
+                    runCatching { json.decodeFromString<List<StoredNote>>(raw) }.getOrDefault(emptyList())
+                }
+                .orEmpty()
+            prefs[KEY_NOTES] = json.encodeToString(listOf(note) + current.take(2))
+        }
+    }
+
     val fetchFailed: Flow<Boolean> = context.widgetDataStore.data.map { prefs ->
         prefs[KEY_FETCH_FAILED] ?: false
     }

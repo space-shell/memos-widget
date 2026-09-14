@@ -35,12 +35,14 @@ class QuickComposeViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch {
             _sendState.value = try {
                 val baseUrl = UrlUtil.normaliseBaseUrl(current.serverUrl)
-                container.memosApi.createMemo(
+                val created = container.memosApi.createMemo(
                     baseUrl = baseUrl,
                     accessToken = current.accessToken,
                     content = content.trim(),
                     visibilityWireName = current.defaultVisibility.wireName,
                 )
+                // Show the new memo in the widget immediately, then reconcile with the server.
+                container.widgetRefresher.onMemoSent(created.name, content.trim())
                 container.widgetRefresher.requestRefresh()
                 SendState.Done
             } catch (e: MemosApiException) {

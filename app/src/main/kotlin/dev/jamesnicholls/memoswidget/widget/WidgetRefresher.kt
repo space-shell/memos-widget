@@ -11,6 +11,7 @@ import dev.jamesnicholls.memoswidget.QuickComposeActivity
 import dev.jamesnicholls.memoswidget.R
 import dev.jamesnicholls.memoswidget.data.StoredNote
 import dev.jamesnicholls.memoswidget.net.UrlUtil
+import dev.jamesnicholls.memoswidget.util.TimeAgo
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -37,6 +38,32 @@ class WidgetRefresher(
         if (ids.isEmpty()) return
 
         fetchLatest()
+        renderAll()
+    }
+
+    /**
+     * Called right after a memo is sent: updates the cache optimistically and
+     * re-renders immediately, so the new memo is visible without waiting for
+     * the server round-trip.
+     */
+    suspend fun onMemoSent(name: String, content: String) {
+        container.widgetStateRepository.prependNote(
+            StoredNote(
+                name = name,
+                content = content,
+                createTime = java.time.Instant.now().toString(),
+            ),
+        )
+        renderAll()
+    }
+
+    private suspend fun renderAll() {
+        val manager = AppWidgetManager.getInstance(context)
+        val ids = manager.getAppWidgetIds(
+            ComponentName(context, MemosWidgetProvider::class.java),
+        )
+        if (ids.isEmpty()) return
+
         val notes = container.widgetStateRepository.notes.first()
         val fetchFailed = container.widgetStateRepository.fetchFailed.first()
         val views = buildRemoteViews(notes, fetchFailed)
@@ -67,15 +94,44 @@ class WidgetRefresher(
     private fun buildRemoteViews(notes: List<StoredNote>, fetchFailed: Boolean): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_memos)
 
-        val noteIds = intArrayOf(R.id.widget_note_1, R.id.widget_note_2, R.id.widget_note_3)
-        noteIds.forEachIndexed { index, viewId ->
+        val rowIds = intArrayOf(
+            R.id.widget_note_row_1,
+            R.id.widget_note_row_2,
+            R.id.widget_note_row_3,
+        )
+        val textIds = intArrayOf(
+            R.id.widget_note_text_1,
+            R.id.widget_note_text_2,
+            R.id.widget_note_text_3,
+        )
+        val timeIds = intArrayOf(
+            R.id.widget_note_time_1,
+            R.id.widget_note_time_2,
+            R.id.widget_note_time_3,
+        )
+        val dividerIds = intArrayOf(R.id.widget_divider_1, R.id.widget_divider_2)
+
+        rowIds.forEachIndexed { index, rowId ->
             val note = notes.getOrNull(index)
             if (note == null) {
-                views.setViewVisibility(viewId, View.GONE)
+                views.setViewVisibility(rowId, View.GONE)
             } else {
-                views.setViewVisibility(viewId, View.VISIBLE)
-                views.setTextViewText(viewId, note.snippet())
+                views.setViewVisibility(rowId, View.VISIBLE)
+                views.setTextViewText(textIds[index], note.snippet())
+                val timeLabel = TimeAgo.format(note.createTime)
+                if (timeLabel.isEmpty()) {
+                    views.setViewVisibility(timeIds[index], View.GONE)
+                } else {
+                    views.setViewVisibility(timeIds[index], View.VISIBLE)
+                    views.setTextViewText(timeIds[index], timeLabel)
+                }
             }
+        }
+        dividerIds.forEachIndexed { index, dividerId ->
+            views.setViewVisibility(
+                dividerId,
+                if (notes.size > index + 1) View.VISIBLE else View.GONE,
+            )
         }
         views.setViewVisibility(
             R.id.widget_notes_empty,
