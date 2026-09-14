@@ -4,6 +4,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.MediaType.Companion.toMediaType
@@ -30,6 +32,12 @@ data class CurrentUser(
     val username: String?,
     val displayName: String?,
     val email: String?,
+)
+
+data class MemoSummary(
+    val name: String,
+    val content: String,
+    val createTime: String?,
 )
 
 data class ConnectionInfo(
@@ -96,6 +104,32 @@ class MemosApi(
             displayName = user.stringOrNull("displayName"),
             email = user.stringOrNull("email"),
         )
+    }
+
+    /**
+     * Fetches the user's most recently created memos (newest first).
+     */
+    suspend fun listRecentMemos(
+        baseUrl: String,
+        accessToken: String,
+        limit: Int = 3,
+    ): List<MemoSummary> = withContext(Dispatchers.IO) {
+        val request = Request.Builder()
+            .url("${baseUrl}/api/v1/memos?pageSize=$limit")
+            .header("Authorization", "Bearer $accessToken")
+            .get()
+            .build()
+        val element = executeForJson(request)
+        val memos = element.jsonObject["memos"]?.jsonArray ?: return@withContext emptyList()
+        memos.mapNotNull { entry ->
+            val obj = entry.jsonObject
+            val name = obj["name"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
+            MemoSummary(
+                name = name,
+                content = obj["content"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                createTime = obj["createTime"]?.jsonPrimitive?.contentOrNull,
+            )
+        }
     }
 
     /**

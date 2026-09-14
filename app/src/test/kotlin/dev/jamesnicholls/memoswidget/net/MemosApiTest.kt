@@ -107,6 +107,41 @@ class MemosApiTest {
     }
 
     @Test
+    fun `listRecentMemos fetches latest memos with auth`() = runBlocking {
+        server.enqueue(
+            MockResponse().setBody(
+                """
+                {"memos":[
+                  {"name":"memos/c","content":"third #journal","createTime":"2026-09-14T10:00:00Z"},
+                  {"name":"memos/b","content":"second","createTime":"2026-09-13T09:00:00Z"},
+                  {"name":"memos/a","content":"first","createTime":"2026-09-12T08:00:00Z"}
+                ]}
+                """.trimIndent()
+            )
+        )
+
+        val memos = api.listRecentMemos(baseUrl(), "tok", limit = 3)
+
+        assertEquals(3, memos.size)
+        assertEquals("memos/c", memos[0].name)
+        assertEquals("third #journal", memos[0].content)
+        assertEquals("2026-09-14T10:00:00Z", memos[0].createTime)
+
+        val recorded = server.takeRequest()
+        assertEquals("/api/v1/memos?pageSize=3", recorded.path)
+        assertEquals("Bearer tok", recorded.getHeader("Authorization"))
+    }
+
+    @Test
+    fun `listRecentMemos handles empty list`() = runBlocking {
+        server.enqueue(MockResponse().setBody("""{"memos":[]}"""))
+
+        val memos = api.listRecentMemos(baseUrl(), "tok")
+
+        assertEquals(0, memos.size)
+    }
+
+    @Test
     fun `network failure maps to NETWORK error`() {
         server.shutdown()
 

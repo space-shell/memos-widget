@@ -6,9 +6,9 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import dev.jamesnicholls.memoswidget.data.MemosSettings
-import dev.jamesnicholls.memoswidget.data.MemoVisibility
 import dev.jamesnicholls.memoswidget.net.MemosApiException
 import dev.jamesnicholls.memoswidget.net.UrlUtil
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -26,10 +26,10 @@ class QuickComposeViewModel(private val container: AppContainer) : ViewModel() {
         data class Error(val message: String) : SendState
     }
 
-    private val _sendState = kotlinx.coroutines.flow.MutableStateFlow<SendState>(SendState.Idle)
+    private val _sendState = MutableStateFlow<SendState>(SendState.Idle)
     val sendState: StateFlow<SendState> = _sendState
 
-    fun send(content: String, visibility: MemoVisibility) {
+    fun send(content: String) {
         val current = settings.value ?: return
         _sendState.value = SendState.Sending
         viewModelScope.launch {
@@ -39,8 +39,9 @@ class QuickComposeViewModel(private val container: AppContainer) : ViewModel() {
                     baseUrl = baseUrl,
                     accessToken = current.accessToken,
                     content = content.trim(),
-                    visibilityWireName = visibility.wireName,
+                    visibilityWireName = current.defaultVisibility.wireName,
                 )
+                container.widgetRefresher.requestRefresh()
                 SendState.Done
             } catch (e: MemosApiException) {
                 SendState.Error(e.message ?: "Sending failed")

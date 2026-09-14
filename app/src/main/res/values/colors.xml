@@ -2,6 +2,7 @@
 <resources>
     <color name="launcher_background">#4F46E5</color>
     <color name="widget_panel">#E61E1F22</color>
-    <color name="widget_field">#33FFFFFF</color>
     <color name="widget_field_hint">#B3FFFFFF</color>
+    <color name="widget_note">#E6FFFFFF</color>
+    <color name="widget_offline">#FFFF8A80</color>
 </resources>

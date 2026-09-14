@@ -1,38 +1,48 @@
 package dev.jamesnicholls.memoswidget.widget
 
-import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
-import android.widget.RemoteViews
-import dev.jamesnicholls.memoswidget.QuickComposeActivity
-import dev.jamesnicholls.memoswidget.R
+import dev.jamesnicholls.memoswidget.MemosApp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 class MemosWidgetProvider : AppWidgetProvider() {
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray,
     ) {
-        for (appWidgetId in appWidgetIds) {
-            val views = RemoteViews(context.packageName, R.layout.widget_memos)
+        refresh(context)
+    }
 
-            views.setOnClickPendingIntent(
-                R.id.widget_field,
-                QuickComposeActivity.createLaunchIntent(context, startVoice = false),
-            )
-            views.setOnClickPendingIntent(
-                R.id.widget_send,
-                QuickComposeActivity.createLaunchIntent(context, startVoice = false),
-            )
-            views.setOnClickPendingIntent(
-                R.id.widget_mic,
-                QuickComposeActivity.createLaunchIntent(context, startVoice = true),
-            )
-
-            appWidgetManager.updateAppWidget(appWidgetId, views)
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action == ACTION_REFRESH) {
+            refresh(context)
+        } else {
+            super.onReceive(context, intent)
         }
+    }
+
+    private fun refresh(context: Context) {
+        val result = goAsync()
+        val container = (context.applicationContext as MemosApp).container
+        scope.launch {
+            try {
+                container.widgetRefresher.refreshAll()
+            } finally {
+                result.finish()
+            }
+        }
+    }
+
+    companion object {
+        const val ACTION_REFRESH = "dev.jamesnicholls.memoswidget.action.REFRESH_WIDGET"
     }
 }

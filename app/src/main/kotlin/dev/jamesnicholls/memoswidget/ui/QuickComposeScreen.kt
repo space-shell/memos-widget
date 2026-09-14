@@ -11,14 +11,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.Public
-import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -30,6 +25,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -39,39 +35,20 @@ import androidx.compose.ui.unit.dp
 import dev.jamesnicholls.memoswidget.QuickComposeViewModel
 import dev.jamesnicholls.memoswidget.R
 import dev.jamesnicholls.memoswidget.data.MemosSettings
-import dev.jamesnicholls.memoswidget.data.MemoVisibility
-import kotlinx.coroutines.flow.Flow
 
 @Composable
 fun QuickComposeScreen(
     initialText: String,
-    autoStartVoice: Boolean,
     settings: MemosSettings?,
     sendState: QuickComposeViewModel.SendState,
-    voiceState: dev.jamesnicholls.memoswidget.QuickComposeActivity.VoiceState,
-    onMicClick: () -> Unit,
-    voiceResults: Flow<String>,
-    onSend: (String, MemoVisibility) -> Unit,
+    onSend: (String) -> Unit,
     onSent: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     val context = LocalContext.current
     var text by rememberSaveable(initialText) { mutableStateOf(initialText) }
-    var visibility by rememberSaveable {
-        mutableStateOf(settings?.defaultVisibility ?: MemoVisibility.PRIVATE)
-    }
 
     val focusRequester = remember { FocusRequester() }
-
-    LaunchedEffect(Unit) {
-        voiceResults.collect { recognized ->
-            text = if (text.isBlank()) recognized else "$text ${recognized.trim()}"
-        }
-    }
-
-    LaunchedEffect(autoStartVoice) {
-        if (autoStartVoice) onMicClick()
-    }
 
     LaunchedEffect(sendState) {
         if (sendState is QuickComposeViewModel.SendState.Done) {
@@ -96,47 +73,14 @@ fun QuickComposeScreen(
         )
 
         LaunchedEffect(Unit) {
-            if (!autoStartVoice) runCatching { focusRequester.requestFocus() }
+            runCatching { focusRequester.requestFocus() }
         }
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = onMicClick) {
-                Icon(
-                    imageVector = Icons.Filled.Mic,
-                    contentDescription = stringResource(R.string.compose_mic),
-                    tint = if (voiceState == dev.jamesnicholls.memoswidget.QuickComposeActivity.VoiceState.Listening) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                )
-            }
-
-            TextButton(onClick = {
-                visibility = when (visibility) {
-                    MemoVisibility.PRIVATE -> MemoVisibility.PROTECTED
-                    MemoVisibility.PROTECTED -> MemoVisibility.PUBLIC
-                    MemoVisibility.PUBLIC -> MemoVisibility.PRIVATE
-                }
-            }) {
-                Icon(
-                    imageVector = when (visibility) {
-                        MemoVisibility.PRIVATE -> Icons.Filled.Lock
-                        MemoVisibility.PROTECTED -> Icons.Filled.Shield
-                        MemoVisibility.PUBLIC -> Icons.Filled.Public
-                    },
-                    contentDescription = null,
-                )
-                Spacer(Modifier.width(6.dp))
-                Text(visibility.wireName)
-            }
-
-            Spacer(Modifier.weight(1f))
-
             when {
                 settings == null -> CircularProgressIndicator(
                     modifier = Modifier.height(24.dp).width(24.dp),
@@ -146,7 +90,7 @@ fun QuickComposeScreen(
                     Text(stringResource(R.string.compose_configure))
                 }
                 else -> Button(
-                    onClick = { onSend(text, visibility) },
+                    onClick = { onSend(text) },
                     enabled = text.isNotBlank() && sendState != QuickComposeViewModel.SendState.Sending,
                 ) {
                     if (sendState is QuickComposeViewModel.SendState.Sending) {
@@ -174,14 +118,6 @@ fun QuickComposeScreen(
                 text = error.message,
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
-            )
-        }
-
-        if (voiceState == dev.jamesnicholls.memoswidget.QuickComposeActivity.VoiceState.Listening) {
-            Text(
-                text = stringResource(R.string.compose_listening),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

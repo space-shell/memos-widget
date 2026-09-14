@@ -4,10 +4,16 @@
 
     <!-- Widget -->
     <string name="widget_label">New memo</string>
-    <string name="widget_description">Quickly send memos to your self-hosted Memos server.</string>
-    <string name="widget_field_hint">New memo…</string>
-    <string name="widget_mic_description">Voice memo</string>
-    <string name="widget_send_description">Send memo</string>
+    <string name="widget_description">Your latest memos and a quick compose button.</string>
+    <string name="widget_notes_empty">Your latest notes appear here</string>
+    <string name="widget_compose_description">Compose new note</string>
+    <string name="widget_error_offline">Showing saved notes — refresh failed</string>
+
+    <string-array name="widget_prompts">
+        <item>What\'s on your mind?</item>
+        <item>Take five to take a note</item>
+        <item>What have you just done just now?</item>
+    </string-array>
 
     <!-- Share target -->
     <string name="share_label">Send to Memos</string>
@@ -32,10 +38,6 @@
     <!-- Quick compose -->
     <string name="compose_hint">Write your memo…</string>
     <string name="compose_send">Send</string>
-    <string name="compose_mic">Voice input</string>
     <string name="compose_sent">Memo sent</string>
-    <string name="compose_listening">Listening…</string>
     <string name="compose_configure">Configure server</string>
-    <string name="compose_speech_unavailable">Speech recognition is not available on this device</string>
-    <string name="compose_speech_error">Speech error %1$d</string>
 </resources>
