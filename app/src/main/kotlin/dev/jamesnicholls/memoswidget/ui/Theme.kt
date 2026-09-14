@@ -7,14 +7,16 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-private val Brand = Color(0xFF4F46E5)
+internal val Brand = Color(0xFF4F46E5)
 
 private val LightColors = lightColorScheme(
     primary = Brand,
 )
 
 private val DarkColors = darkColorScheme(
-    primary = Color(0xFFB4B0FF),
+    // Lighter indigo keeps primary-colored text readable on dark surfaces;
+    // the send button overrides to solid Brand with white content.
+    primary = Color(0xFFA9B4FF),
 )
 
 @Composable

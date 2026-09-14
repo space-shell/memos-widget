@@ -67,6 +67,12 @@
         android:visibility="gone" />
 
     <TextView
+        android:id="@+id/widget_spacer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <TextView
         android:id="@+id/widget_prompt"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

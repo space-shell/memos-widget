@@ -12,10 +12,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -29,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -70,6 +73,10 @@ fun QuickComposeScreen(
             minLines = 3,
             maxLines = 10,
             placeholder = { Text(stringResource(R.string.compose_hint)) },
+            // Constant border: no focus colour flash.
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.outline,
+            ),
         )
 
         LaunchedEffect(Unit) {
@@ -92,12 +99,16 @@ fun QuickComposeScreen(
                 else -> Button(
                     onClick = { onSend(text) },
                     enabled = text.isNotBlank() && sendState != QuickComposeViewModel.SendState.Sending,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Brand,
+                        contentColor = Color.White,
+                    ),
                 ) {
                     if (sendState is QuickComposeViewModel.SendState.Sending) {
                         CircularProgressIndicator(
                             modifier = Modifier.height(18.dp).width(18.dp),
                             strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onPrimary,
+                            color = Color.White,
                         )
                         Spacer(Modifier.width(8.dp))
                     } else {

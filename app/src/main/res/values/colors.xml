@@ -5,4 +5,5 @@
     <color name="widget_field_hint">#B3FFFFFF</color>
     <color name="widget_note">#E6FFFFFF</color>
     <color name="widget_offline">#FFFF8A80</color>
+    <color name="compose_panel">#FFFFFFFF</color>
 </resources>
