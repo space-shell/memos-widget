@@ -1,0 +1,48 @@
+# Draft fdroiddata metadata for the inclusion MR to
+# https://gitlab.com/fdroid/fdroiddata (metadata/dev.jamesnicholls.memoswidget.yml)
+# Requires the GitHub repo to be public before submission.
+Categories:
+  - Writing
+License: GPL-3.0-or-later
+SourceCode: https://github.com/space-shell/memos-widget
+IssueTracker: https://github.com/space-shell/memos-widget/issues
+Changelog: https://github.com/space-shell/memos-widget/releases
+Binaries: https://github.com/space-shell/memos-widget/releases/download/v%v/memos-widget-v%v-release.apk
+RepoType: git
+Repo: https://github.com/space-shell/memos-widget.git
+
+AutoName: Memos Widget
+Name: Memos Widget
+Summary: Quick-capture widget for your self-hosted Memos server
+Description: |-
+  An Android client for Memos focused on fast capture against your own
+  self-hosted instance.
+
+  * Home screen widget: latest memos with relative timestamps, a rotating
+    composition prompt, and a single compose button; the title opens the
+    server in the browser.
+  * Quick compose overlay with the keyboard ready; default visibility
+    (PRIVATE / PROTECTED / PUBLIC) configurable.
+  * Share target for text and URLs.
+  * Configure server address and personal access token; no tracking or
+    analytics.
+
+  Note: Android home screen widgets cannot host real text input, so the
+  widget launches a lightweight compose overlay as the typing surface.
+
+  Text memos only for now; image/video attachments are planned.
+
+# Build note: the release build type falls back to debug signing when the
+# SIGNING_* environment variables are unset (as in the fdroid build
+# container); fdroidserver re-signs at publish time.
+Builds:
+  - versionName: 0.4.1
+    versionCode: 5
+    commit: af507c7213ab60cb18502ac61f0bff095eca99ab
+    gradle: yes
+    output: app/build/outputs/apk/release/app-release.apk
+
+CurrentVersion: 0.4.1
+CurrentVersionCode: 5
+AutoUpdateMode: Version v%v
+UpdateCheckMode: Tags v[0-9]+[0-9.]*[0-9]$

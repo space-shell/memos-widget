@@ -3,6 +3,12 @@
 An Android client for [Memos](https://usememos.com/) focused on fast capture against a
 self-hosted instance. Targets the Memos **0.31+** v1 API.
 
+License: **GPL-3.0-or-later** (see [LICENSE](LICENSE)).
+
+Distribution: GitHub Releases (CI-built, signed APKs). F-Droid submission
+metadata lives in [`fdroid/`](fdroid/) and store listing metadata in
+[`fastlane/`](fastlane/).
+
 ## Features
 
 - **Home screen widget** — shows your 3 latest memos (fetched from the server after

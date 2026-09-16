@@ -1,0 +1,21 @@
+An Android client for Memos (https://usememos.com/) focused on fast capture
+against your own self-hosted instance.
+
+<ul>
+<li><b>Home screen widget</b> — shows your latest memos with relative
+timestamps, a rotating composition prompt, and a single compose button. Tap
+the <b>Memos</b> title to open your server in the browser.</li>
+<li><b>Quick compose</b> — the compose overlay opens with the keyboard ready;
+send with one tap. Choose the default visibility (PRIVATE / PROTECTED /
+PUBLIC) in settings.</li>
+<li><b>Share target</b> — share text and URLs from any app straight into a
+pre-filled compose window.</li>
+<li><b>Self-hosted, no accounts</b> — configure the server address and a
+personal access token. Nothing leaves your instance; no tracking, no
+analytics.</li>
+</ul>
+
+Note: Android home screen widgets cannot host real text input, so the widget
+launches a lightweight compose overlay as the typing surface.
+
+Text memos only for now; image/video attachments are planned.

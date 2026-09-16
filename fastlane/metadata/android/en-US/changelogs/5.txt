@@ -1,0 +1,5 @@
+Widget refresh failures on devices with aggressive background process
+freezing (OnePlus/Oppo/Realme etc.) are fixed by moving the refresh network
+fetch into WorkManager. Fetch failures are now logged under the MemosWidget
+tag. Widget: header title opens the Memos server in the browser; release
+builds are signed via CI.
