@@ -19,23 +19,27 @@ class MemosWidgetProvider : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray,
     ) {
-        refresh(context)
+        // Cache-only render: fast, no network. Network work goes to WorkManager
+        // so OEM process freezers cannot kill it mid-request.
+        renderFromCache(context)
+        WidgetRefreshWorker.enqueue(context)
     }
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == ACTION_REFRESH) {
-            refresh(context)
+            renderFromCache(context)
+            WidgetRefreshWorker.enqueue(context)
         } else {
             super.onReceive(context, intent)
         }
     }
 
-    private fun refresh(context: Context) {
+    private fun renderFromCache(context: Context) {
         val result = goAsync()
         val container = (context.applicationContext as MemosApp).container
         scope.launch {
             try {
-                container.widgetRefresher.refreshAll()
+                container.widgetRefresher.renderAll()
             } finally {
                 result.finish()
             }

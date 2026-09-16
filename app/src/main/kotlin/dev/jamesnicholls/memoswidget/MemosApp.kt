@@ -20,5 +20,6 @@ class MemosApp : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
+        dev.jamesnicholls.memoswidget.widget.WidgetRefreshWorker.schedulePeriodic(this)
     }
 }

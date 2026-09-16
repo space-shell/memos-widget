@@ -28,18 +28,25 @@ class WidgetRefresher(
 ) {
 
     fun requestRefresh() {
-        val intent = Intent(context, MemosWidgetProvider::class.java)
-            .setAction(MemosWidgetProvider.ACTION_REFRESH)
-        context.sendBroadcast(intent)
+        WidgetRefreshWorker.enqueue(context)
     }
 
-    suspend fun refreshAll() {
+    /** Re-renders every widget instance from the cached state (no network). */
+    suspend fun renderAll() {
         val manager = AppWidgetManager.getInstance(context)
         val ids = manager.getAppWidgetIds(
             ComponentName(context, MemosWidgetProvider::class.java),
         )
         if (ids.isEmpty()) return
 
+        val settings = container.settingsRepository.settings.first()
+        val notes = container.widgetStateRepository.notes.first()
+        val fetchFailed = container.widgetStateRepository.fetchFailed.first()
+        val views = buildRemoteViews(notes, fetchFailed, settings.serverUrl)
+        manager.updateAppWidget(ids, views)
+    }
+
+    suspend fun refreshAll() {
         fetchLatest()
         renderAll()
     }
@@ -60,36 +67,28 @@ class WidgetRefresher(
         renderAll()
     }
 
-    private suspend fun renderAll() {
-        val manager = AppWidgetManager.getInstance(context)
-        val ids = manager.getAppWidgetIds(
-            ComponentName(context, MemosWidgetProvider::class.java),
-        )
-        if (ids.isEmpty()) return
-
-        val settings = container.settingsRepository.settings.first()
-        val notes = container.widgetStateRepository.notes.first()
-        val fetchFailed = container.widgetStateRepository.fetchFailed.first()
-        val views = buildRemoteViews(notes, fetchFailed, settings.serverUrl)
-        manager.updateAppWidget(ids, views)
-    }
-
     private suspend fun fetchLatest() {
         val settings = container.settingsRepository.settings.first()
         if (!settings.isConfigured) return
+        val startedAt = android.os.SystemClock.elapsedRealtime()
         try {
             val baseUrl = UrlUtil.normaliseBaseUrl(settings.serverUrl)
-            // Bound the fetch so the goAsync broadcast window is not exceeded.
             val fetched = withTimeoutOrNull(FETCH_TIMEOUT_MS) {
                 container.memosApi.listRecentMemos(baseUrl, settings.accessToken, limit = 3)
             }
             if (fetched == null) {
+                android.util.Log.w(TAG, "widget fetch timed out after ${FETCH_TIMEOUT_MS}ms")
                 container.widgetStateRepository.setFetchFailed(true)
             } else {
+                android.util.Log.i(
+                    TAG,
+                    "widget fetch ok: ${fetched.size} memos in ${android.os.SystemClock.elapsedRealtime() - startedAt}ms",
+                )
                 container.widgetStateRepository.updateNotes(fetched)
                 container.widgetStateRepository.setFetchFailed(false)
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            android.util.Log.w(TAG, "widget fetch failed: ${e.message}", e)
             // Keep the cached notes on any failure.
             container.widgetStateRepository.setFetchFailed(true)
         }
@@ -196,7 +195,8 @@ class WidgetRefresher(
             .ifEmpty { "—" }
 
     companion object {
-        private const val FETCH_TIMEOUT_MS = 8_000L
+        private const val TAG = "MemosWidget"
+        private const val FETCH_TIMEOUT_MS = 15_000L
         private const val REQUEST_BROWSER = 2001
         private const val REQUEST_SETTINGS = 2002
     }
