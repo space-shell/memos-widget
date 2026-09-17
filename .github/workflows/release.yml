@@ -40,11 +40,18 @@ jobs:
           cp app/build/outputs/apk/release/app-release.apk "memos-widget-${GITHUB_REF_NAME}-release.apk"
           sha256sum memos-widget-*.apk > checksums.txt
 
-      - name: Create release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            memos-widget-*-debug.apk
-            memos-widget-*-release.apk
-            checksums.txt
-          generate_release_notes: true
+      - name: Create release and upload artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          for attempt in 1 2 3; do
+            if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+              gh release upload "$GITHUB_REF_NAME" memos-widget-*.apk checksums.txt --clobber && break
+            else
+              gh release create "$GITHUB_REF_NAME" --generate-notes \
+                memos-widget-*.apk checksums.txt && break
+            fi
+            echo "upload attempt $attempt failed; retrying in 30s"
+            sleep 30
+          done
