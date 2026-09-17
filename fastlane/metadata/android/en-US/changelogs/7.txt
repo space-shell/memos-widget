@@ -1,0 +1,4 @@
+Widget fixes: the memos list now has a fixed height so every launcher
+renders it scrollable (weighted heights collapsed to a single row on some
+OEM launchers), and the last-7-days activity heatmap now fills the full
+widget width with square cells. The widget re-renders on resize.

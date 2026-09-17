@@ -34,6 +34,16 @@ class MemosWidgetProvider : AppWidgetProvider() {
         }
     }
 
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: android.os.Bundle?,
+    ) {
+        // Re-render so the heatmap refits the new widget width.
+        renderFromCache(context)
+    }
+
     private fun renderFromCache(context: Context) {
         val result = goAsync()
         val container = (context.applicationContext as MemosApp).container

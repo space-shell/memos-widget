@@ -41,11 +41,11 @@
     <ListView
         android:id="@+id/widget_notes_list"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_height="150dp"
         android:cacheColorHint="#00000000"
         android:divider="@drawable/bg_widget_divider"
-        android:dividerHeight="1dp" />
+        android:dividerHeight="1dp"
+        android:scrollbars="none" />
 
     <TextView
         android:id="@+id/widget_notes_empty"
@@ -61,11 +61,17 @@
 
     <ImageView
         android:id="@+id/widget_heatmap"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:contentDescription="@string/widget_heatmap_description"
         android:scaleType="fitStart" />
+
+    <TextView
+        android:id="@+id/widget_spacer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
 
     <TextView
         android:id="@+id/widget_offline_notice"

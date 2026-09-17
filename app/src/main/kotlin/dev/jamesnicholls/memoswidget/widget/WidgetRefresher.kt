@@ -45,9 +45,17 @@ class WidgetRefresher(
         val notes = container.widgetStateRepository.notes.first()
         val counts = container.widgetStateRepository.dailyCounts.first()
         val fetchFailed = container.widgetStateRepository.fetchFailed.first()
-        val views = buildRemoteViews(notes, counts, fetchFailed, settings.serverUrl)
-        manager.updateAppWidget(ids, views)
-        ids.forEach { manager.notifyAppWidgetViewDataChanged(it, R.id.widget_notes_list) }
+
+        for (id in ids) {
+            // Render per-instance so the heatmap can size to the actual width.
+            val options = manager.getAppWidgetOptions(id)
+            val widthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)
+                .takeIf { it > 0 }
+                ?: FALLBACK_WIDTH_DP
+            val views = buildRemoteViews(notes, counts, fetchFailed, settings.serverUrl, widthDp)
+            manager.updateAppWidget(id, views)
+            manager.notifyAppWidgetViewDataChanged(id, R.id.widget_notes_list)
+        }
     }
 
     suspend fun refreshAll() {
@@ -92,7 +100,7 @@ class WidgetRefresher(
                     MemoStats.todaysMemos(fetched, zone, today),
                 )
                 container.widgetStateRepository.updateDailyCounts(
-                    MemoStats.dailyCounts(fetched, zone, today, days = HeatmapRenderer.DEFAULT_WEEKS * 7),
+                    MemoStats.dailyCounts(fetched, zone, today, days = HeatmapRenderer.DAYS),
                 )
                 container.widgetStateRepository.setFetchFailed(false)
                 android.util.Log.i(
@@ -113,6 +121,7 @@ class WidgetRefresher(
         counts: Map<String, Int>,
         fetchFailed: Boolean,
         serverUrl: String,
+        widgetWidthDp: Int,
     ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_memos)
 
@@ -128,15 +137,15 @@ class WidgetRefresher(
         )
         views.setEmptyView(R.id.widget_notes_list, R.id.widget_notes_empty)
 
-        // Contribution-style heatmap.
+        // Last-7-days activity heatmap, sized to fill the widget width with square cells.
         val density = context.resources.displayMetrics.density
-        val heatmap = HeatmapRenderer.render(
-            counts = counts,
-            today = LocalDate.now(),
-            cellPx = 9f * density,
-            gapPx = 2f * density,
+        val gapPx = 2f * density
+        val availableWidthPx = (widgetWidthDp - WIDGET_HORIZONTAL_PADDING_DP) * density
+        val cellPx = HeatmapRenderer.cellSizeForWidth(availableWidthPx, gapPx)
+        views.setImageViewBitmap(
+            R.id.widget_heatmap,
+            HeatmapRenderer.render(counts, LocalDate.now(), cellPx, gapPx),
         )
-        views.setImageViewBitmap(R.id.widget_heatmap, heatmap)
 
         views.setViewVisibility(
             R.id.widget_offline_notice,
@@ -185,5 +194,7 @@ class WidgetRefresher(
         private const val RECENT_MEMO_LIMIT = 1000
         private const val REQUEST_BROWSER = 2001
         private const val REQUEST_SETTINGS = 2002
+        private const val FALLBACK_WIDTH_DP = 250
+        private const val WIDGET_HORIZONTAL_PADDING_DP = 28
     }
 }
