@@ -50,8 +50,20 @@ data class CreatedMemo(
     val name: String,
 )
 
+data class UploadedAttachment(
+    val name: String,
+    val filename: String,
+)
+
 @kotlinx.serialization.Serializable
-private data class CreateMemoRequest(val content: String, val visibility: String)
+private data class AttachmentRef(val name: String)
+
+@kotlinx.serialization.Serializable
+private data class CreateMemoRequest(
+    val content: String,
+    val visibility: String,
+    val attachments: List<AttachmentRef> = emptyList(),
+)
 
 class MemosApi(
     private val client: OkHttpClient = defaultClient(),
@@ -63,9 +75,15 @@ class MemosApi(
         accessToken: String,
         content: String,
         visibilityWireName: String,
+        attachmentNames: List<String> = emptyList(),
     ): CreatedMemo = withContext(Dispatchers.IO) {
-        val body = json.encodeToString(CreateMemoRequest(content, visibilityWireName))
-            .toRequestBody("application/json".toMediaType())
+        val body = json.encodeToString(
+            CreateMemoRequest(
+                content = content,
+                visibility = visibilityWireName,
+                attachments = attachmentNames.map { AttachmentRef(it) },
+            ),
+        ).toRequestBody("application/json".toMediaType())
         val request = Request.Builder()
             .url("${baseUrl}/api/v1/memos")
             .header("Authorization", "Bearer $accessToken")
@@ -77,6 +95,93 @@ class MemosApi(
             ?: throw MemosApiException(MemosApiException.Kind.PARSE, "Response did not include a memo name")
         CreatedMemo(name = name)
     }
+
+    /**
+     * Uploads a file via the Memos 0.31 chunked attachment protocol
+     * (POST /api/v1/attachments:upload). The first call carries the spec and
+     * returns an uploadId plus maxChunkSize; subsequent calls stream bounded
+     * base64 chunks and finish the upload.
+     */
+    suspend fun uploadAttachment(
+        baseUrl: String,
+        accessToken: String,
+        filename: String,
+        mimeType: String,
+        totalSize: Long,
+        openStream: () -> java.io.InputStream,
+    ): UploadedAttachment = withContext(Dispatchers.IO) {
+        openStream().use { stream ->
+            // 1. Start the upload: spec only, no data, to learn maxChunkSize.
+            val initJson = kotlinx.serialization.json.buildJsonObject {
+                put(
+                    "spec",
+                    kotlinx.serialization.json.buildJsonObject {
+                        put("filename", kotlinx.serialization.json.JsonPrimitive(filename))
+                        put("type", kotlinx.serialization.json.JsonPrimitive(mimeType))
+                        put("totalSize", kotlinx.serialization.json.JsonPrimitive(totalSize.toString()))
+                    },
+                )
+                put("writeOffset", kotlinx.serialization.json.JsonPrimitive("0"))
+            }
+            val initResp = postUpload(baseUrl, accessToken, initJson.toString())
+            val uploadId = initResp.stringOrNull("uploadId")
+                ?: throw MemosApiException(MemosApiException.Kind.PARSE, "Upload start did not return an uploadId")
+            val maxChunk = initResp["maxChunkSize"]?.jsonPrimitive?.content?.toIntOrNull()
+                ?.takeIf { it > 0 }
+                ?: DEFAULT_CHUNK_BYTES
+
+            var committed = initResp["committedSize"]?.jsonPrimitive?.content?.toLongOrNull() ?: 0L
+            initResp["attachment"]?.jsonObject?.let { return@withContext it.toUploadedAttachment() }
+
+            val buffer = ByteArray(maxChunk)
+            while (committed < totalSize) {
+                val toRead = minOf(maxChunk.toLong(), totalSize - committed).toInt()
+                var read = 0
+                while (read < toRead) {
+                    val n = stream.read(buffer, read, toRead - read)
+                    if (n < 0) throw MemosApiException(
+                        MemosApiException.Kind.PARSE,
+                        "Attachment stream ended before the declared size",
+                    )
+                    read += n
+                }
+                val finish = committed + read >= totalSize
+                val chunkJson = kotlinx.serialization.json.buildJsonObject {
+                    put("uploadId", kotlinx.serialization.json.JsonPrimitive(uploadId))
+                    put("writeOffset", kotlinx.serialization.json.JsonPrimitive(committed.toString()))
+                    put("data", kotlinx.serialization.json.JsonPrimitive(java.util.Base64.getEncoder().encodeToString(buffer.copyOf(read))))
+                    put("finishWrite", kotlinx.serialization.json.JsonPrimitive(finish))
+                }
+                val resp = postUpload(baseUrl, accessToken, chunkJson.toString())
+                committed = resp["committedSize"]?.jsonPrimitive?.content?.toLongOrNull() ?: (committed + read)
+                resp["attachment"]?.jsonObject?.let { return@withContext it.toUploadedAttachment() }
+            }
+
+            // Some servers only materialise the attachment on a follow-up status call.
+            val statusJson = kotlinx.serialization.json.buildJsonObject {
+                put("uploadId", kotlinx.serialization.json.JsonPrimitive(uploadId))
+                put("writeOffset", kotlinx.serialization.json.JsonPrimitive(committed.toString()))
+            }
+            val resp = postUpload(baseUrl, accessToken, statusJson.toString())
+            resp["attachment"]?.jsonObject?.let { return@withContext it.toUploadedAttachment() }
+            throw MemosApiException(MemosApiException.Kind.PARSE, "Upload finished but no attachment was returned")
+        }
+    }
+
+    private fun postUpload(baseUrl: String, accessToken: String, bodyJson: String): kotlinx.serialization.json.JsonObject {
+        val request = Request.Builder()
+            .url("${baseUrl}/api/v1/attachments:upload")
+            .header("Authorization", "Bearer $accessToken")
+            .post(bodyJson.toRequestBody("application/json".toMediaType()))
+            .build()
+        return executeForJson(request).jsonObject
+    }
+
+    private fun kotlinx.serialization.json.JsonObject.toUploadedAttachment() = UploadedAttachment(
+        name = stringOrNull("name")
+            ?: throw MemosApiException(MemosApiException.Kind.PARSE, "Attachment response did not include a name"),
+        filename = stringOrNull("filename").orEmpty(),
+    )
 
     suspend fun getInstanceProfile(baseUrl: String): InstanceProfile = withContext(Dispatchers.IO) {
         val request = Request.Builder()
@@ -193,6 +298,8 @@ class MemosApi(
         this[key]?.jsonPrimitive?.content
 
     companion object {
+        private const val DEFAULT_CHUNK_BYTES = 512 * 1024
+
         fun defaultClient(): OkHttpClient = OkHttpClient.Builder()
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)

@@ -2,7 +2,6 @@ package dev.jamesnicholls.memoswidget.util
 
 import java.time.Duration
 import java.time.Instant
-import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
@@ -28,16 +27,5 @@ object TimeAgo {
         }
     }
 
-    private fun parse(raw: String?): Instant? {
-        if (raw.isNullOrBlank()) return null
-        return try {
-            Instant.parse(raw)
-        } catch (_: Exception) {
-            try {
-                OffsetDateTime.parse(raw).toInstant()
-            } catch (_: Exception) {
-                null
-            }
-        }
-    }
+    private fun parse(raw: String?): Instant? = IsoTimes.parseInstant(raw)
 }

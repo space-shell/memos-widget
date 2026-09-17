@@ -82,6 +82,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        requestNotificationPermissionIfNeeded()
         val container = (application as MemosApp).container
         setContent {
             MemosTheme {
@@ -98,5 +99,24 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (android.os.Build.VERSION.SDK_INT >= 33 &&
+            androidx.core.content.ContextCompat.checkSelfPermission(
+                this,
+                android.Manifest.permission.POST_NOTIFICATIONS,
+            ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            androidx.core.app.ActivityCompat.requestPermissions(
+                this,
+                arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
+                REQUEST_NOTIFICATIONS,
+            )
+        }
+    }
+
+    companion object {
+        private const val REQUEST_NOTIFICATIONS = 5001
     }
 }

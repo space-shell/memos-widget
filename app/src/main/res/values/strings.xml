@@ -10,6 +10,7 @@
     <string name="widget_notes_empty">Your latest notes appear here</string>
     <string name="widget_compose_description">Compose new note</string>
     <string name="widget_error_offline">Showing saved notes — refresh failed</string>
+    <string name="widget_heatmap_description">Daily memo activity heatmap</string>
 
     <string-array name="widget_prompts">
         <item>What\'s on your mind?</item>
@@ -60,5 +61,11 @@
     <string name="compose_hint">Write your memo…</string>
     <string name="compose_send">Send</string>
     <string name="compose_sent">Memo sent</string>
+    <string name="compose_sending_attachments">Sending memo with attachments…</string>
     <string name="compose_configure">Configure server</string>
+    <string name="compose_attachments_count">%1$d attachment(s) attached</string>
+    <string name="compose_attachment_copy_failed">Could not read some shared files</string>
+
+    <!-- Settings -->
+    <string name="settings_version">Version %1$s</string>
 </resources>

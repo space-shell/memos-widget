@@ -25,19 +25,23 @@ data class StoredNote(
 )
 
 /**
- * Last-known recent memos for home screen widget rendering.
- * Written after successful server fetches so the widget can render
- * instantly (and offline) from cache.
+ * Last-known widget data: today's memos (for the scrollable list) and
+ * per-day counts (for the heatmap). Written after successful server
+ * fetches so the widget can render instantly (and offline) from cache.
  */
 class WidgetStateRepository(private val context: Context) {
 
     private val json = Json { ignoreUnknownKeys = true }
 
     val notes: Flow<List<StoredNote>> = context.widgetDataStore.data.map { prefs ->
-        val raw = prefs[KEY_NOTES] ?: return@map emptyList()
+        decodeNotes(prefs[KEY_NOTES])
+    }
+
+    val dailyCounts: Flow<Map<String, Int>> = context.widgetDataStore.data.map { prefs ->
+        val raw = prefs[KEY_COUNTS] ?: return@map emptyMap()
         runCatching {
-            json.decodeFromString<List<StoredNote>>(raw)
-        }.getOrDefault(emptyList())
+            json.decodeFromString<Map<String, Int>>(raw)
+        }.getOrDefault(emptyMap())
     }
 
     suspend fun updateNotes(memos: List<MemoSummary>) {
@@ -47,18 +51,24 @@ class WidgetStateRepository(private val context: Context) {
         }
     }
 
-    /**
-     * Prepends a just-sent memo so the widget reflects it immediately,
-     * before the server fetch reconciles the list.
-     */
-    suspend fun prependNote(note: StoredNote) {
+    suspend fun updateDailyCounts(counts: Map<String, Int>) {
         context.widgetDataStore.edit { prefs ->
-            val current = prefs[KEY_NOTES]
-                ?.let { raw ->
-                    runCatching { json.decodeFromString<List<StoredNote>>(raw) }.getOrDefault(emptyList())
-                }
+            prefs[KEY_COUNTS] = json.encodeToString(counts)
+        }
+    }
+
+    /**
+     * Prepends a just-sent memo (today's list + heatmap count) so the widget
+     * reflects it immediately, before the server fetch reconciles the data.
+     */
+    suspend fun prependNote(note: StoredNote, todayKey: String) {
+        context.widgetDataStore.edit { prefs ->
+            val current = decodeNotes(prefs[KEY_NOTES])
+            prefs[KEY_NOTES] = json.encodeToString((listOf(note) + current).take(MAX_DAY_NOTES))
+            val counts = prefs[KEY_COUNTS]
+                ?.let { raw -> runCatching { json.decodeFromString<Map<String, Int>>(raw) }.getOrDefault(emptyMap()) }
                 .orEmpty()
-            prefs[KEY_NOTES] = json.encodeToString(listOf(note) + current.take(2))
+            prefs[KEY_COUNTS] = json.encodeToString(counts + (todayKey to (counts[todayKey] ?: 0) + 1))
         }
     }
 
@@ -72,8 +82,15 @@ class WidgetStateRepository(private val context: Context) {
         }
     }
 
+    private fun decodeNotes(raw: String?): List<StoredNote> {
+        if (raw == null) return emptyList()
+        return runCatching { json.decodeFromString<List<StoredNote>>(raw) }.getOrDefault(emptyList())
+    }
+
     companion object {
         private val KEY_NOTES = stringPreferencesKey("notes_json")
+        private val KEY_COUNTS = stringPreferencesKey("counts_json")
         private val KEY_FETCH_FAILED = booleanPreferencesKey("fetch_failed")
+        private const val MAX_DAY_NOTES = 50
     }
 }

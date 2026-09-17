@@ -11,19 +11,21 @@ metadata lives in [`fdroid/`](fdroid/) and store listing metadata in
 
 ## Features
 
-- **Home screen widget** — shows your 3 latest memos (fetched from the server after
-  each send and every 30 min; cached copy shown offline), a rotating composition
-  prompt, and a single compose button. Tapping compose opens a lightweight overlay
-  with the keyboard already up (Android `RemoteViews` cannot host real text input,
-  so the overlay is the typing surface).
-- **Share target** — share text/URLs from any app via *"Send to Memos"*; the shared text
-  is pre-filled in the quick-compose overlay for editing before sending.
-- **Settings** — server address, personal access token (PAT), default memo visibility
-  (PRIVATE / PROTECTED / PUBLIC), and a test-connection check that validates both the
-  server and the token.
-
-Text memos only so far — image/video attachments are a planned follow-up (Memos 0.31
-chunked attachment upload).
+- **Home screen widget** — scrollable list of today's memos (with relative
+  timestamps), a GitHub-style activity heatmap (intensity = memos per day),
+  a rotating composition prompt, and a compose button. The **Memos** title
+  opens your server in the browser. Data refreshes after each send and every
+  30 min via WorkManager; the cached copy renders offline.
+- **Quick compose** — the compose overlay opens with the keyboard ready;
+  send with one tap. Choose the default visibility (PRIVATE / PROTECTED /
+  PUBLIC) in settings.
+- **Share target** — share text, URLs, images, videos, audio, and PDFs via
+  *"Send to Memos"*. Files are uploaded with the Memos 0.31 chunked
+  attachment protocol and bound to the memo; sends run in the background
+  with progress/failure notifications.
+- **Self-hosted, no accounts** — configure the server address and a
+  personal access token. Nothing leaves your instance; no tracking, no
+  analytics.
 
 ## Setup
 
@@ -70,7 +72,12 @@ falls back to debug signing.
 
 - UI: Kotlin + Jetpack Compose (Material 3); widget uses classic XML `RemoteViews`.
 - Networking: OkHttp + kotlinx.serialization against `/api/v1`
-  (`POST /memos`, `GET /memos?pageSize=3`, `GET /instance/profile`, `GET /auth/me`),
-  Bearer PAT auth.
-- Settings: DataStore preferences, auto-saved; widget note cache in its own DataStore.
+  (`POST /memos`, `POST /attachments:upload` chunked, `GET /memos`,
+  `GET /instance/profile`, `GET /auth/me`), Bearer PAT auth.
+- Settings: DataStore preferences, auto-saved; widget cache (day notes +
+  daily counts) in its own DataStore.
+- Background: WorkManager drives the 30-min widget refresh and
+  attachment-bearing sends (`SendMemoWorker`).
+- Widget internals: scrollable list via a RemoteViewsService factory;
+  heatmap rendered to a bitmap (RemoteViews cannot compose dynamic grids).
 - Manual DI via `AppContainer` on the `Application`.

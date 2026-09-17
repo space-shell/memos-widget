@@ -172,6 +172,22 @@ fun SettingsScreen(
             )
 
             Spacer(Modifier.height(24.dp))
+
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val version = remember {
+                runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }
+                    .getOrNull()
+            }
+            Text(
+                text = stringResource(
+                    R.string.settings_version,
+                    version ?: "?",
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
         }
     }
 }

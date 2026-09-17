@@ -1,0 +1,4 @@
+Attachments: share images, videos, audio, and PDFs to Memos (chunked
+upload, background send with notifications). Widget: scrollable list of
+today's memos, GitHub-style daily activity heatmap, and the app version
+shown at the bottom of settings.

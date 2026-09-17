@@ -38,101 +38,14 @@
             android:textStyle="bold" />
     </LinearLayout>
 
-    <LinearLayout
-        android:id="@+id/widget_note_row_1"
+    <ListView
+        android:id="@+id/widget_notes_list"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingVertical="2dp"
-        android:visibility="gone">
-
-        <TextView
-            android:id="@+id/widget_note_text_1"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:textColor="@color/widget_note"
-            android:textSize="13sp" />
-
-        <TextView
-            android:id="@+id/widget_note_time_1"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:maxLines="1"
-            android:textColor="@color/widget_field_hint"
-            android:textSize="11sp" />
-    </LinearLayout>
-
-    <ImageView
-        android:id="@+id/widget_divider_1"
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_marginVertical="6dp"
-        android:scaleType="fitXY"
-        android:src="@drawable/bg_widget_divider"
-        android:visibility="gone" />
-
-    <LinearLayout
-        android:id="@+id/widget_note_row_2"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingVertical="2dp"
-        android:visibility="gone">
-
-        <TextView
-            android:id="@+id/widget_note_text_2"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:textColor="@color/widget_note"
-            android:textSize="13sp" />
-
-        <TextView
-            android:id="@+id/widget_note_time_2"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:maxLines="1"
-            android:textColor="@color/widget_field_hint"
-            android:textSize="11sp" />
-    </LinearLayout>
-
-    <ImageView
-        android:id="@+id/widget_divider_2"
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_marginVertical="6dp"
-        android:scaleType="fitXY"
-        android:src="@drawable/bg_widget_divider"
-        android:visibility="gone" />
-
-    <LinearLayout
-        android:id="@+id/widget_note_row_3"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingVertical="2dp"
-        android:visibility="gone">
-
-        <TextView
-            android:id="@+id/widget_note_text_3"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:textColor="@color/widget_note"
-            android:textSize="13sp" />
-
-        <TextView
-            android:id="@+id/widget_note_time_3"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:maxLines="1"
-            android:textColor="@color/widget_field_hint"
-            android:textSize="11sp" />
-    </LinearLayout>
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:cacheColorHint="#00000000"
+        android:divider="@drawable/bg_widget_divider"
+        android:dividerHeight="1dp" />
 
     <TextView
         android:id="@+id/widget_notes_empty"
@@ -146,6 +59,14 @@
         android:textSize="13sp"
         android:visibility="gone" />
 
+    <ImageView
+        android:id="@+id/widget_heatmap"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:contentDescription="@string/widget_heatmap_description"
+        android:scaleType="fitStart" />
+
     <TextView
         android:id="@+id/widget_offline_notice"
         android:layout_width="match_parent"
@@ -156,12 +77,6 @@
         android:textColor="@color/widget_offline"
         android:textSize="11sp"
         android:visibility="gone" />
-
-    <TextView
-        android:id="@+id/widget_spacer"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
 
     <TextView
         android:id="@+id/widget_prompt"

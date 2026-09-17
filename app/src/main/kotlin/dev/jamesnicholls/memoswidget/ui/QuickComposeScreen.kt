@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -44,6 +45,7 @@ fun QuickComposeScreen(
     initialText: String,
     settings: MemosSettings?,
     sendState: QuickComposeViewModel.SendState,
+    attachmentCount: Int,
     onSend: (String) -> Unit,
     onSent: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -54,9 +56,20 @@ fun QuickComposeScreen(
     val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(sendState) {
-        if (sendState is QuickComposeViewModel.SendState.Done) {
-            Toast.makeText(context, context.getString(R.string.compose_sent), Toast.LENGTH_SHORT).show()
-            onSent()
+        when (sendState) {
+            QuickComposeViewModel.SendState.Done -> {
+                Toast.makeText(context, context.getString(R.string.compose_sent), Toast.LENGTH_SHORT).show()
+                onSent()
+            }
+            QuickComposeViewModel.SendState.HandedToBackground -> {
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.compose_sending_attachments),
+                    Toast.LENGTH_SHORT,
+                ).show()
+                onSent()
+            }
+            else -> Unit
         }
     }
 
@@ -79,6 +92,22 @@ fun QuickComposeScreen(
             ),
         )
 
+        if (attachmentCount > 0) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Filled.AttachFile,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = stringResource(R.string.compose_attachments_count, attachmentCount),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
         LaunchedEffect(Unit) {
             runCatching { focusRequester.requestFocus() }
         }
@@ -98,13 +127,16 @@ fun QuickComposeScreen(
                 }
                 else -> Button(
                     onClick = { onSend(text) },
-                    enabled = text.isNotBlank() && sendState != QuickComposeViewModel.SendState.Sending,
+                    enabled = text.isNotBlank() && sendState.let {
+                        it != QuickComposeViewModel.SendState.Sending &&
+                            it != QuickComposeViewModel.SendState.HandedToBackground
+                    },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Brand,
                         contentColor = Color.White,
                     ),
                 ) {
-                    if (sendState is QuickComposeViewModel.SendState.Sending) {
+                    if (sendState == QuickComposeViewModel.SendState.Sending) {
                         CircularProgressIndicator(
                             modifier = Modifier.height(18.dp).width(18.dp),
                             strokeWidth = 2.dp,

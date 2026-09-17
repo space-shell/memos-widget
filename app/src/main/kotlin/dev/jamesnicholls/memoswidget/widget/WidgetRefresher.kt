@@ -14,13 +14,15 @@ import dev.jamesnicholls.memoswidget.QuickComposeActivity
 import dev.jamesnicholls.memoswidget.R
 import dev.jamesnicholls.memoswidget.data.StoredNote
 import dev.jamesnicholls.memoswidget.net.UrlUtil
-import dev.jamesnicholls.memoswidget.util.TimeAgo
+import dev.jamesnicholls.memoswidget.util.MemoStats
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
+import java.time.LocalDate
+import java.time.ZoneId
 
 /**
- * Fetches the latest memos for the widget (server first, cache as fallback)
- * and re-renders all instances of [MemosWidgetProvider].
+ * Fetches widget data (server first, cache as fallback) and re-renders all
+ * instances of [MemosWidgetProvider].
  */
 class WidgetRefresher(
     private val context: Context,
@@ -41,9 +43,11 @@ class WidgetRefresher(
 
         val settings = container.settingsRepository.settings.first()
         val notes = container.widgetStateRepository.notes.first()
+        val counts = container.widgetStateRepository.dailyCounts.first()
         val fetchFailed = container.widgetStateRepository.fetchFailed.first()
-        val views = buildRemoteViews(notes, fetchFailed, settings.serverUrl)
+        val views = buildRemoteViews(notes, counts, fetchFailed, settings.serverUrl)
         manager.updateAppWidget(ids, views)
+        ids.forEach { manager.notifyAppWidgetViewDataChanged(it, R.id.widget_notes_list) }
     }
 
     suspend fun refreshAll() {
@@ -57,12 +61,14 @@ class WidgetRefresher(
      * the server round-trip.
      */
     suspend fun onMemoSent(name: String, content: String) {
+        val zone = ZoneId.systemDefault()
         container.widgetStateRepository.prependNote(
             StoredNote(
                 name = name,
                 content = content,
                 createTime = java.time.Instant.now().toString(),
             ),
+            todayKey = LocalDate.now(zone).toString(),
         )
         renderAll()
     }
@@ -74,18 +80,25 @@ class WidgetRefresher(
         try {
             val baseUrl = UrlUtil.normaliseBaseUrl(settings.serverUrl)
             val fetched = withTimeoutOrNull(FETCH_TIMEOUT_MS) {
-                container.memosApi.listRecentMemos(baseUrl, settings.accessToken, limit = 3)
+                container.memosApi.listRecentMemos(baseUrl, settings.accessToken, limit = RECENT_MEMO_LIMIT)
             }
             if (fetched == null) {
                 android.util.Log.w(TAG, "widget fetch timed out after ${FETCH_TIMEOUT_MS}ms")
                 container.widgetStateRepository.setFetchFailed(true)
             } else {
+                val zone = ZoneId.systemDefault()
+                val today = LocalDate.now(zone)
+                container.widgetStateRepository.updateNotes(
+                    MemoStats.todaysMemos(fetched, zone, today),
+                )
+                container.widgetStateRepository.updateDailyCounts(
+                    MemoStats.dailyCounts(fetched, zone, today, days = HeatmapRenderer.DEFAULT_WEEKS * 7),
+                )
+                container.widgetStateRepository.setFetchFailed(false)
                 android.util.Log.i(
                     TAG,
-                    "widget fetch ok: ${fetched.size} memos in ${android.os.SystemClock.elapsedRealtime() - startedAt}ms",
+                    "widget fetch ok: ${fetched.size} recent memos in ${android.os.SystemClock.elapsedRealtime() - startedAt}ms",
                 )
-                container.widgetStateRepository.updateNotes(fetched)
-                container.widgetStateRepository.setFetchFailed(false)
             }
         } catch (e: Exception) {
             android.util.Log.w(TAG, "widget fetch failed: ${e.message}", e)
@@ -94,56 +107,36 @@ class WidgetRefresher(
         }
     }
 
+    @Suppress("DEPRECATION")
     private fun buildRemoteViews(
         notes: List<StoredNote>,
+        counts: Map<String, Int>,
         fetchFailed: Boolean,
         serverUrl: String,
     ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_memos)
 
-        val rowIds = intArrayOf(
-            R.id.widget_note_row_1,
-            R.id.widget_note_row_2,
-            R.id.widget_note_row_3,
-        )
-        val textIds = intArrayOf(
-            R.id.widget_note_text_1,
-            R.id.widget_note_text_2,
-            R.id.widget_note_text_3,
-        )
-        val timeIds = intArrayOf(
-            R.id.widget_note_time_1,
-            R.id.widget_note_time_2,
-            R.id.widget_note_time_3,
-        )
-        val dividerIds = intArrayOf(R.id.widget_divider_1, R.id.widget_divider_2)
-
-        rowIds.forEachIndexed { index, rowId ->
-            val note = notes.getOrNull(index)
-            if (note == null) {
-                views.setViewVisibility(rowId, View.GONE)
-            } else {
-                views.setViewVisibility(rowId, View.VISIBLE)
-                views.setTextViewText(textIds[index], note.snippet())
-                val timeLabel = TimeAgo.format(note.createTime)
-                if (timeLabel.isEmpty()) {
-                    views.setViewVisibility(timeIds[index], View.GONE)
-                } else {
-                    views.setViewVisibility(timeIds[index], View.VISIBLE)
-                    views.setTextViewText(timeIds[index], timeLabel)
-                }
-            }
-        }
-        dividerIds.forEachIndexed { index, dividerId ->
-            views.setViewVisibility(
-                dividerId,
-                if (notes.size > index + 1) View.VISIBLE else View.GONE,
-            )
-        }
         views.setViewVisibility(
             R.id.widget_notes_empty,
             if (notes.isEmpty()) View.VISIBLE else View.GONE,
         )
+
+        // Scrollable "today's memos" list.
+        views.setRemoteAdapter(
+            R.id.widget_notes_list,
+            Intent(context, MemosListViewService::class.java),
+        )
+        views.setEmptyView(R.id.widget_notes_list, R.id.widget_notes_empty)
+
+        // Contribution-style heatmap.
+        val density = context.resources.displayMetrics.density
+        val heatmap = HeatmapRenderer.render(
+            counts = counts,
+            today = LocalDate.now(),
+            cellPx = 9f * density,
+            gapPx = 2f * density,
+        )
+        views.setImageViewBitmap(R.id.widget_heatmap, heatmap)
 
         views.setViewVisibility(
             R.id.widget_offline_notice,
@@ -186,17 +179,10 @@ class WidgetRefresher(
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )
 
-    private fun StoredNote.snippet(): String =
-        content
-            .lineSequence()
-            .firstOrNull { it.isNotBlank() }
-            ?.trim()
-            .orEmpty()
-            .ifEmpty { "—" }
-
     companion object {
         private const val TAG = "MemosWidget"
-        private const val FETCH_TIMEOUT_MS = 15_000L
+        private const val FETCH_TIMEOUT_MS = 20_000L
+        private const val RECENT_MEMO_LIMIT = 1000
         private const val REQUEST_BROWSER = 2001
         private const val REQUEST_SETTINGS = 2002
     }
