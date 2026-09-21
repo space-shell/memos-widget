@@ -59,6 +59,12 @@
         android:textSize="13sp"
         android:visibility="gone" />
 
+    <TextView
+        android:id="@+id/widget_spacer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
     <ImageView
         android:id="@+id/widget_heatmap"
         android:layout_width="match_parent"
@@ -66,12 +72,6 @@
         android:layout_marginTop="8dp"
         android:contentDescription="@string/widget_heatmap_description"
         android:scaleType="fitStart" />
-
-    <TextView
-        android:id="@+id/widget_spacer"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
 
     <TextView
         android:id="@+id/widget_offline_notice"

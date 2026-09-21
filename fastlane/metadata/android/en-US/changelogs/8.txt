@@ -1,0 +1,2 @@
+The last-7-days activity squares now sit at the bottom of the widget,
+just above the prompt and New memo button, filling the full width.
